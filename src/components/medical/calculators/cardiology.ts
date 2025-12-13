@@ -440,5 +440,121 @@ export const cardiologyCalculators: CalculatorDefinition[] = [
         severity
       };
     }
+  },
+  {
+    id: 'wells_pe',
+    name: 'Score de Wells (EP)',
+    description: 'Probabilité d\'embolie pulmonaire',
+    category: 'cardiology',
+    fields: [
+      { id: 'clinical_dvt', label: 'Signes cliniques de TVP', type: 'checkbox' },
+      { id: 'pe_likely', label: 'EP aussi ou plus probable qu\'un autre diagnostic', type: 'checkbox' },
+      { id: 'hr_100', label: 'Fréquence cardiaque > 100 bpm', type: 'checkbox' },
+      { id: 'immobilization', label: 'Immobilisation/chirurgie < 4 semaines', type: 'checkbox' },
+      { id: 'previous_pe_dvt', label: 'Antécédent TVP/EP', type: 'checkbox' },
+      { id: 'hemoptysis', label: 'Hémoptysie', type: 'checkbox' },
+      { id: 'malignancy', label: 'Cancer actif', type: 'checkbox' }
+    ],
+    calculate: (inputs): CalculatorResult => {
+      let score = 0;
+      if (inputs.clinical_dvt) score += 3;
+      if (inputs.pe_likely) score += 3;
+      if (inputs.hr_100) score += 1.5;
+      if (inputs.immobilization) score += 1.5;
+      if (inputs.previous_pe_dvt) score += 1.5;
+      if (inputs.hemoptysis) score += 1;
+      if (inputs.malignancy) score += 1;
+      
+      let probability = '';
+      let severity: 'low' | 'normal' | 'high' | 'critical' = 'low';
+      
+      if (score <= 1) {
+        probability = 'Probabilité faible (1.3%) - D-dimères si négatifs = exclusion';
+        severity = 'low';
+      } else if (score <= 4) {
+        probability = 'Probabilité modérée (16%) - D-dimères puis angio-TDM si positifs';
+        severity = 'high';
+      } else {
+        probability = 'Probabilité élevée (38-78%) - Angio-TDM directe';
+        severity = 'critical';
+      }
+      
+      return { value: score, unit: 'pts', interpretation: probability, normalRange: '≤1', severity };
+    }
+  },
+  {
+    id: 'heart_score',
+    name: 'HEART Score',
+    description: 'Risque de MACE dans la douleur thoracique',
+    category: 'cardiology',
+    fields: [
+      {
+        id: 'history', label: 'Anamnèse', type: 'select',
+        options: [
+          { value: '0', label: 'Légèrement suspecte (0)' },
+          { value: '1', label: 'Modérément suspecte (1)' },
+          { value: '2', label: 'Hautement suspecte (2)' }
+        ]
+      },
+      {
+        id: 'ecg', label: 'ECG', type: 'select',
+        options: [
+          { value: '0', label: 'Normal (0)' },
+          { value: '1', label: 'Anomalies non spécifiques (1)' },
+          { value: '2', label: 'Déviation ST significative (2)' }
+        ]
+      },
+      {
+        id: 'age', label: 'Âge', type: 'select',
+        options: [
+          { value: '0', label: '< 45 ans (0)' },
+          { value: '1', label: '45-64 ans (1)' },
+          { value: '2', label: '≥ 65 ans (2)' }
+        ]
+      },
+      {
+        id: 'risk_factors', label: 'Facteurs de risque', type: 'select',
+        options: [
+          { value: '0', label: 'Aucun (0)' },
+          { value: '1', label: '1-2 facteurs (1)' },
+          { value: '2', label: '≥3 ou athérosclérose connue (2)' }
+        ]
+      },
+      {
+        id: 'troponin', label: 'Troponine initiale', type: 'select',
+        options: [
+          { value: '0', label: 'Normale (0)' },
+          { value: '1', label: '1-3× normale (1)' },
+          { value: '2', label: '>3× normale (2)' }
+        ]
+      }
+    ],
+    calculate: (inputs): CalculatorResult => {
+      const total = parseInt(inputs.history || '0') + parseInt(inputs.ecg || '0') +
+                   parseInt(inputs.age || '0') + parseInt(inputs.risk_factors || '0') +
+                   parseInt(inputs.troponin || '0');
+      
+      let risk = '';
+      let severity: 'low' | 'normal' | 'high' | 'critical' = 'low';
+      
+      if (total <= 3) {
+        risk = 'Risque faible (0.9-1.7%) - Sortie possible';
+        severity = 'low';
+      } else if (total <= 6) {
+        risk = 'Risque modéré (12-17%) - Observation/Tests non invasifs';
+        severity = 'high';
+      } else {
+        risk = 'Risque élevé (50-65%) - Hospitalisation/Coronarographie';
+        severity = 'critical';
+      }
+      
+      return {
+        value: total,
+        unit: '/10',
+        interpretation: risk,
+        normalRange: '0-3',
+        severity
+      };
+    }
   }
 ];
