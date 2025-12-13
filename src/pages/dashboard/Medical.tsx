@@ -3,13 +3,14 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Stethoscope, Calendar, FileText, Users, Clock, FolderOpen, Calculator, Sparkles, CalendarDays, LayoutDashboard } from "lucide-react";
+import { Stethoscope, Calendar, FileText, Users, Clock, FolderOpen, Calculator, Sparkles, CalendarDays, LayoutDashboard, Bell } from "lucide-react";
 import { PatientsList } from "@/components/medical/PatientsList";
 import { PatientDetails } from "@/components/medical/PatientDetails";
 import { PatientSummaryDashboard } from "@/components/medical/PatientSummaryDashboard";
 import { MedicalCalculators } from "@/components/medical/MedicalCalculators";
 import { AIPrescriptionAssistant } from "@/components/medical/AIPrescriptionAssistant";
 import { AppointmentScheduler } from "@/components/medical/AppointmentScheduler";
+import { RemindersDashboard } from "@/components/medical/RemindersDashboard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,11 +85,15 @@ export default function Medical() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="appointments">
               <CalendarDays className="h-4 w-4 mr-2" />
               Agenda
+            </TabsTrigger>
+            <TabsTrigger value="reminders">
+              <Bell className="h-4 w-4 mr-2" />
+              Rappels
             </TabsTrigger>
             <TabsTrigger value="patients">
               <FolderOpen className="h-4 w-4 mr-2" />
@@ -100,7 +105,7 @@ export default function Medical() {
             </TabsTrigger>
             <TabsTrigger value="ai-assistant">
               <Sparkles className="h-4 w-4 mr-2" />
-              Assistant IA
+              IA
             </TabsTrigger>
           </TabsList>
 
@@ -200,6 +205,10 @@ export default function Medical() {
 
           <TabsContent value="appointments" className="mt-6">
             <AppointmentScheduler />
+          </TabsContent>
+
+          <TabsContent value="reminders" className="mt-6">
+            <RemindersDashboard />
           </TabsContent>
 
           <TabsContent value="patients" className="mt-6">
