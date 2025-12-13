@@ -19,6 +19,7 @@ import Social from "./pages/dashboard/Social";
 import SOS from "./pages/dashboard/SOS";
 import Research from "./pages/dashboard/Research";
 import Statistics from "./pages/dashboard/Statistics";
+import Information from "./pages/dashboard/Information";
 import Documentation from "./pages/Documentation";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/dashboard/sos" element={<SOS />} />
             <Route path="/dashboard/research" element={<Research />} />
             <Route path="/dashboard/statistics" element={<Statistics />} />
+            <Route path="/dashboard/information" element={<Information />} />
             <Route path="/documentation" element={<Documentation />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
