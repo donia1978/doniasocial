@@ -16,7 +16,8 @@ import {
   Siren,
   FileText,
   Brain,
-  PieChart
+  PieChart,
+  Newspaper
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { title: "Tableau de bord", url: "/dashboard", icon: LayoutDashboard },
   { title: "Social", url: "/dashboard/social", icon: Globe },
+  { title: "Information", url: "/dashboard/information", icon: Newspaper },
   { title: "SOS / Assistance", url: "/dashboard/sos", icon: Siren },
   { title: "Éducation", url: "/dashboard/education", icon: GraduationCap },
   { title: "Médical", url: "/dashboard/medical", icon: Stethoscope },
