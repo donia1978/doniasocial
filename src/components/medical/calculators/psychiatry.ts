@@ -461,5 +461,76 @@ export const psychiatryCalculators: CalculatorDefinition[] = [
         severity: severityLevel
       };
     }
+  },
+  {
+    id: 'madrs',
+    name: 'MADRS',
+    description: 'Montgomery-Åsberg Depression Rating Scale',
+    category: 'psychiatry',
+    fields: [
+      { id: 'sadness', label: 'Tristesse apparente (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'reported_sadness', label: 'Tristesse exprimée (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'inner_tension', label: 'Tension intérieure (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'reduced_sleep', label: 'Réduction du sommeil (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'reduced_appetite', label: 'Réduction de l\'appétit (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'concentration', label: 'Difficultés de concentration (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'lassitude', label: 'Lassitude (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'inability_to_feel', label: 'Incapacité à ressentir (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'pessimistic', label: 'Pensées pessimistes (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 },
+      { id: 'suicidal', label: 'Idées suicidaires (0-6)', type: 'number', placeholder: '0', min: 0, max: 6 }
+    ],
+    calculate: (inputs): CalculatorResult => {
+      const fields = ['sadness', 'reported_sadness', 'inner_tension', 'reduced_sleep', 'reduced_appetite',
+                     'concentration', 'lassitude', 'inability_to_feel', 'pessimistic', 'suicidal'];
+      let total = 0;
+      fields.forEach(f => { total += parseInt(inputs[f] || '0'); });
+      
+      let interpretation = '';
+      let severity: 'low' | 'normal' | 'high' | 'critical' = 'normal';
+      
+      if (total <= 6) { interpretation = 'Pas de dépression'; severity = 'normal'; }
+      else if (total <= 19) { interpretation = 'Dépression légère'; severity = 'low'; }
+      else if (total <= 34) { interpretation = 'Dépression modérée'; severity = 'high'; }
+      else { interpretation = 'Dépression sévère'; severity = 'critical'; }
+      
+      if (parseInt(inputs.suicidal || '0') >= 4) {
+        interpretation += ' ⚠️ RISQUE SUICIDAIRE ÉLEVÉ';
+        severity = 'critical';
+      }
+      
+      return { value: total, unit: '/60', interpretation, normalRange: '0-6', severity };
+    }
+  },
+  {
+    id: 'ciwa_ar',
+    name: 'CIWA-Ar',
+    description: 'Évaluation du sevrage alcoolique',
+    category: 'psychiatry',
+    fields: [
+      { id: 'nausea', label: 'Nausées (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'tremor', label: 'Tremblements (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'sweating', label: 'Sueurs (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'anxiety', label: 'Anxiété (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'agitation', label: 'Agitation (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'tactile', label: 'Troubles tactiles (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'auditory', label: 'Troubles auditifs (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'visual', label: 'Troubles visuels (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'headache', label: 'Céphalées (0-7)', type: 'number', placeholder: '0', min: 0, max: 7 },
+      { id: 'orientation', label: 'Orientation (0-4)', type: 'number', placeholder: '0', min: 0, max: 4 }
+    ],
+    calculate: (inputs): CalculatorResult => {
+      const fields = ['nausea', 'tremor', 'sweating', 'anxiety', 'agitation', 'tactile', 'auditory', 'visual', 'headache', 'orientation'];
+      let total = 0;
+      fields.forEach(f => { total += parseInt(inputs[f] || '0'); });
+      
+      let interpretation = '';
+      let severity: 'low' | 'normal' | 'high' | 'critical' = 'normal';
+      
+      if (total <= 8) { interpretation = 'Sevrage léger'; severity = 'low'; }
+      else if (total <= 15) { interpretation = 'Sevrage modéré - Traitement symptomatique'; severity = 'high'; }
+      else { interpretation = 'Sevrage sévère - Risque de delirium tremens'; severity = 'critical'; }
+      
+      return { value: total, unit: '/67', interpretation, normalRange: '0-8', severity };
+    }
   }
 ];
