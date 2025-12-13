@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { History, TrendingUp, TrendingDown, Minus, Calendar, FileText } from "lucide-react";
+import { History, TrendingUp, TrendingDown, Minus, Calendar, FileText, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,9 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { getCalculatorById, calculatorCategories } from "./calculators";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Props {
   patientId?: string;
@@ -112,6 +115,119 @@ export function CalculationHistory({ patientId, patientName }: Props) {
     return "Autre";
   };
 
+  const exportToPDF = () => {
+    if (filteredCalculations.length === 0) {
+      toast.error("Aucun calcul à exporter");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 98, 255);
+    doc.text("DONIA Medical", 14, 20);
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Rapport des Calculs Médicaux", 14, 32);
+    
+    // Patient info
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    if (patientName) {
+      doc.text(`Patient: ${patientName}`, 14, 42);
+    }
+    doc.text(`Date du rapport: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: fr })}`, 14, patientName ? 50 : 42);
+    doc.text(`Nombre de calculs: ${filteredCalculations.length}`, 14, patientName ? 58 : 50);
+    
+    // Separator line
+    const startY = patientName ? 65 : 57;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, startY, pageWidth - 14, startY);
+    
+    // Table data
+    const tableData = filteredCalculations.map(calc => [
+      format(new Date(calc.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+      getCalculatorName(calc.calculation_type),
+      getCategoryName(calc.calculation_type),
+      `${calc.result?.value} ${calc.result?.unit || ''}`,
+      calc.result?.interpretation || '-',
+      calc.result?.severity || 'Normal'
+    ]);
+
+    autoTable(doc, {
+      startY: startY + 5,
+      head: [['Date', 'Calculateur', 'Spécialité', 'Résultat', 'Interprétation', 'Sévérité']],
+      body: tableData,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [41, 98, 255],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250],
+      },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 50 },
+        5: { cellWidth: 20 },
+      },
+      didDrawCell: (data) => {
+        // Color severity column
+        if (data.column.index === 5 && data.section === 'body') {
+          const severity = data.cell.raw as string;
+          if (severity === 'critical') {
+            doc.setTextColor(220, 38, 38);
+          } else if (severity === 'high') {
+            doc.setTextColor(234, 179, 8);
+          }
+        }
+      },
+      didParseCell: (data) => {
+        if (data.column.index === 5 && data.section === 'body') {
+          const severity = data.cell.raw as string;
+          if (severity === 'critical') {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = 'bold';
+          } else if (severity === 'high') {
+            data.cell.styles.textColor = [234, 179, 8];
+          }
+        }
+      }
+    });
+
+    // Footer
+    const pageCount = doc.internal.pages.length - 1;
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Page ${i} sur ${pageCount} - Généré par DONIA Medical`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+
+    // Save
+    const fileName = patientName 
+      ? `calculs_medicaux_${patientName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`
+      : `calculs_medicaux_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+    
+    doc.save(fileName);
+    toast.success("PDF exporté avec succès");
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -134,6 +250,15 @@ export function CalculationHistory({ patientId, patientName }: Props) {
             {patientName && <span className="text-sm font-normal text-muted-foreground">• {patientName}</span>}
           </CardTitle>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPDF}
+              disabled={filteredCalculations.length === 0}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filtrer par type" />
