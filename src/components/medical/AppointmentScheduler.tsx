@@ -163,7 +163,7 @@ export function AppointmentScheduler() {
       const [hours, minutes] = newTime.split(":").map(Number);
       const appointmentDate = setMinutes(setHours(newDate, hours), minutes);
 
-      const { error } = await supabase.from("appointments").insert({
+      const { data: appointment, error } = await supabase.from("appointments").insert({
         patient_id: newPatientId,
         doctor_id: user.id,
         appointment_date: appointmentDate.toISOString(),
@@ -172,7 +172,7 @@ export function AppointmentScheduler() {
         location: newLocation || null,
         notes: newNotes || null,
         status: "scheduled"
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -182,17 +182,67 @@ export function AppointmentScheduler() {
       fetchAppointments();
       
       // Schedule reminders
-      scheduleReminders(appointmentDate);
+      if (appointment) {
+        await scheduleReminders(appointment.id, appointmentDate);
+      }
     } catch (error) {
       console.error("Error creating appointment:", error);
       toast.error("Erreur lors de la création du rendez-vous");
     }
   };
 
-  const scheduleReminders = async (appointmentDate: Date) => {
-    // This would typically be handled by a backend cron job
-    // For now, we just show a toast
-    toast.info("Rappels programmés: 24h, 2h et 15min avant le RDV");
+  const scheduleReminders = async (appointmentId: string, appointmentDate: Date) => {
+    try {
+      const now = new Date();
+      const reminders = [];
+      
+      // 24h before
+      const reminder24h = new Date(appointmentDate.getTime() - 24 * 60 * 60 * 1000);
+      if (reminder24h > now) {
+        reminders.push({
+          appointment_id: appointmentId,
+          reminder_type: "24h",
+          scheduled_at: reminder24h.toISOString(),
+          status: "pending",
+          channel: "push"
+        });
+      }
+      
+      // 2h before
+      const reminder2h = new Date(appointmentDate.getTime() - 2 * 60 * 60 * 1000);
+      if (reminder2h > now) {
+        reminders.push({
+          appointment_id: appointmentId,
+          reminder_type: "2h",
+          scheduled_at: reminder2h.toISOString(),
+          status: "pending",
+          channel: "push"
+        });
+      }
+      
+      // 15min before
+      const reminder15min = new Date(appointmentDate.getTime() - 15 * 60 * 1000);
+      if (reminder15min > now) {
+        reminders.push({
+          appointment_id: appointmentId,
+          reminder_type: "15min",
+          scheduled_at: reminder15min.toISOString(),
+          status: "pending",
+          channel: "push"
+        });
+      }
+      
+      if (reminders.length > 0) {
+        const { error } = await supabase.from("appointment_reminders").insert(reminders);
+        if (error) {
+          console.error("Error scheduling reminders:", error);
+        } else {
+          toast.info(`${reminders.length} rappel(s) programmé(s) pour ce RDV`);
+        }
+      }
+    } catch (error) {
+      console.error("Error scheduling reminders:", error);
+    }
   };
 
   const updateAppointmentStatus = async (appointmentId: string, status: string) => {
