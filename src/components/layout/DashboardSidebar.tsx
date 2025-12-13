@@ -15,7 +15,8 @@ import {
   Globe,
   Siren,
   FileText,
-  Brain
+  Brain,
+  PieChart
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +31,7 @@ const menuItems = [
   { title: "Éducation", url: "/dashboard/education", icon: GraduationCap },
   { title: "Médical", url: "/dashboard/medical", icon: Stethoscope },
   { title: "Research Core", url: "/dashboard/research", icon: Brain },
+  { title: "Statistics", url: "/dashboard/statistics", icon: PieChart },
   { title: "Agenda", url: "/dashboard/agenda", icon: Calendar },
   { title: "Cours en ligne", url: "/dashboard/courses", icon: BookOpen },
   { title: "Messagerie", url: "/dashboard/chat", icon: MessageSquare },
