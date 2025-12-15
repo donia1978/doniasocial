@@ -60,6 +60,27 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        medical: {
+          DEFAULT: "hsl(var(--medical))",
+          foreground: "hsl(var(--medical-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)))',
+        'gradient-medical': 'linear-gradient(135deg, hsl(199 89% 48%), hsl(172 66% 50%))',
+        'gradient-dark': 'linear-gradient(135deg, hsl(222 47% 11%), hsl(217 33% 17%))',
       },
       borderRadius: {
         lg: "var(--radius)",
