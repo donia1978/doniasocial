@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { UserProvider } from "@/contexts/UserContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -30,35 +31,37 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/education" element={<Education />} />
-            <Route path="/dashboard/medical" element={<Medical />} />
-            <Route path="/dashboard/notifications" element={<Notifications />} />
-            <Route path="/dashboard/agenda" element={<Agenda />} />
-            <Route path="/dashboard/courses" element={<Courses />} />
-            <Route path="/dashboard/chat" element={<Chat />} />
-            <Route path="/dashboard/users" element={<UserManagement />} />
-            <Route path="/dashboard/analytics" element={<Analytics />} />
-            <Route path="/dashboard/social" element={<Social />} />
-            <Route path="/dashboard/sos" element={<SOS />} />
-            <Route path="/dashboard/research" element={<Research />} />
-            <Route path="/dashboard/statistics" element={<Statistics />} />
-            <Route path="/dashboard/information" element={<Information />} />
-            <Route path="/dashboard/profile" element={<Profile />} />
-            <Route path="/dashboard/settings" element={<Settings />} />
-            <Route path="/documentation" element={<Documentation />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <UserProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/education" element={<Education />} />
+              <Route path="/dashboard/medical" element={<Medical />} />
+              <Route path="/dashboard/notifications" element={<Notifications />} />
+              <Route path="/dashboard/agenda" element={<Agenda />} />
+              <Route path="/dashboard/courses" element={<Courses />} />
+              <Route path="/dashboard/chat" element={<Chat />} />
+              <Route path="/dashboard/users" element={<UserManagement />} />
+              <Route path="/dashboard/analytics" element={<Analytics />} />
+              <Route path="/dashboard/social" element={<Social />} />
+              <Route path="/dashboard/sos" element={<SOS />} />
+              <Route path="/dashboard/research" element={<Research />} />
+              <Route path="/dashboard/statistics" element={<Statistics />} />
+              <Route path="/dashboard/information" element={<Information />} />
+              <Route path="/dashboard/profile" element={<Profile />} />
+              <Route path="/dashboard/settings" element={<Settings />} />
+              <Route path="/documentation" element={<Documentation />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </UserProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
