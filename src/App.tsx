@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Education from "./pages/dashboard/Education";
+import ExamGenerator from "./pages/dashboard/ExamGenerator";
 import Medical from "./pages/dashboard/Medical";
 import Notifications from "./pages/dashboard/Notifications";
 import Agenda from "./pages/dashboard/Agenda";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/education" element={<Education />} />
+              <Route path="/dashboard/education/exam" element={<ExamGenerator />} />
               <Route path="/dashboard/medical" element={<Medical />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/agenda" element={<Agenda />} />

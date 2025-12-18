@@ -1,8 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, BookOpen, FileText, Users, Plus, Library } from "lucide-react";
+import { GraduationCap, BookOpen, FileText, Users, Plus, Library, Sparkles } from "lucide-react";
 import { EducationalResources } from "@/components/education/EducationalResources";
 
 const courses = [
@@ -13,12 +14,20 @@ const courses = [
 ];
 
 export default function Education() {
+  const navigate = useNavigate();
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Éducation</h1>
-          <p className="text-muted-foreground">Gérez les cours, examens et ressources pédagogiques</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Éducation</h1>
+            <p className="text-muted-foreground">Gérez les cours, examens et ressources pédagogiques</p>
+          </div>
+          <Button onClick={() => navigate("/dashboard/education/exam")} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Générer un examen
+          </Button>
         </div>
 
         <Tabs defaultValue="resources" className="space-y-6">
