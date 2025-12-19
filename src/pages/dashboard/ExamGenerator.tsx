@@ -21,15 +21,23 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  Upload,
-  X,
   Loader2,
   Download,
   Edit,
   Save,
   BookOpen,
+  Globe,
+  School,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  generateExamDocx, 
+  generateTunisianExercises, 
+  ExamData,
+  ExerciseData,
+  TUNISIAN_RESOURCES 
+} from "@/lib/examDocxGenerator";
+import { Badge } from "@/components/ui/badge";
 
 const SUBJECTS = [
   "Mathématiques",
@@ -43,32 +51,54 @@ const SUBJECTS = [
   "Géographie",
   "Philosophie",
   "Informatique",
-  "Sciences de la Vie et de la Terre",
+  "Sciences",
+  "Éducation civique",
+  "Éducation islamique",
 ];
 
 const LEVELS = [
   { group: "Primaire", items: ["1ère année", "2ème année", "3ème année", "4ème année", "5ème année", "6ème année"] },
-  { group: "Secondaire", items: ["7ème année", "8ème année", "9ème année", "1ère année secondaire", "2ème année secondaire", "3ème année secondaire", "Baccalauréat"] },
-  { group: "Université", items: ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2"] },
+  { group: "Collège", items: ["7ème année", "8ème année", "9ème année"] },
+  { group: "Lycée", items: ["1ère année secondaire", "2ème année secondaire", "3ème année secondaire", "Baccalauréat"] },
 ];
 
 const LANGUAGES = [
   { value: "fr", label: "Français" },
-  { value: "ar", label: "Arabe" },
-  { value: "en", label: "Anglais" },
+  { value: "ar", label: "العربية (Arabe)" },
+  { value: "en", label: "English" },
 ];
 
 const EVALUATION_TYPES = [
-  { value: "formative", label: "Formative" },
-  { value: "summative", label: "Sommative" },
-  { value: "diagnostic", label: "Diagnostique" },
+  { value: "controle1", label: "Devoir de Contrôle N°1" },
+  { value: "controle2", label: "Devoir de Contrôle N°2" },
+  { value: "controle3", label: "Devoir de Contrôle N°3" },
+  { value: "synthese1", label: "Devoir de Synthèse N°1" },
+  { value: "synthese2", label: "Devoir de Synthèse N°2" },
+  { value: "synthese3", label: "Devoir de Synthèse N°3" },
+  { value: "formative", label: "Évaluation Formative" },
+  { value: "diagnostic", label: "Évaluation Diagnostique" },
+];
+
+const TRIMESTERS = [
+  { value: "1", label: "1er Trimestre" },
+  { value: "2", label: "2ème Trimestre" },
+  { value: "3", label: "3ème Trimestre" },
+];
+
+const TUNISIAN_SOURCES = [
+  { id: "devoir.tn", name: "Devoir.tn", url: "https://www.devoir.tn", icon: "📚" },
+  { id: "edunet.tn", name: "EduNet.tn", url: "https://www.edunet.tn", icon: "🎓" },
+  { id: "cnp.tn", name: "CNP Tunisie", url: "https://www.cnp.com.tn", icon: "📖" },
 ];
 
 interface FormData {
+  schoolName: string;
   subject: string;
   level: string;
-  language: string;
+  language: "fr" | "ar" | "en";
   evaluationType: string;
+  trimester: string;
+  schoolYear: string;
   duration: number;
   exerciseCount: number;
   easyPercent: number;
@@ -76,92 +106,22 @@ interface FormData {
   hardPercent: number;
   includeAnswerKey: boolean;
   objectives: string;
-  uploadedFiles: File[];
+  selectedSources: string[];
 }
-
-const MOCK_GENERATED_EXAM = `# Examen de Mathématiques - 3ème année secondaire
-
-**Durée:** 2 heures | **Coefficient:** 4 | **Date:** ${new Date().toLocaleDateString('fr-FR')}
-
----
-
-## Exercice 1 (4 points) - Niveau Facile
-
-Résoudre les équations suivantes dans ℝ:
-
-1. \`2x + 5 = 13\`
-2. \`3(x - 2) = 2x + 4\`
-3. \`x² - 9 = 0\`
-
----
-
-## Exercice 2 (6 points) - Niveau Moyen
-
-Soit f la fonction définie sur ℝ par: \`f(x) = x² - 4x + 3\`
-
-1. Calculer f(0), f(1) et f(3)
-2. Déterminer les racines de f
-3. Dresser le tableau de variations de f
-4. Tracer la courbe représentative de f
-
----
-
-## Exercice 3 (6 points) - Niveau Moyen
-
-Dans un repère orthonormé (O, i, j), on considère les points:
-- A(1, 2)
-- B(4, 6)
-- C(-2, 4)
-
-1. Calculer les coordonnées du vecteur AB
-2. Calculer la distance AB
-3. Déterminer l'équation de la droite (AB)
-4. Le triangle ABC est-il rectangle? Justifier.
-
----
-
-## Exercice 4 (4 points) - Niveau Difficile
-
-Démontrer par récurrence que pour tout entier naturel n ≥ 1:
-
-\`1 + 2 + 3 + ... + n = n(n+1)/2\`
-
----
-
-## Corrigé
-
-### Exercice 1
-1. x = 4
-2. x = 10
-3. x = 3 ou x = -3
-
-### Exercice 2
-1. f(0) = 3, f(1) = 0, f(3) = 0
-2. Les racines sont x = 1 et x = 3
-3. f décroissante sur ]-∞, 2] et croissante sur [2, +∞[
-4. Parabole avec sommet en (2, -1)
-
-### Exercice 3
-1. AB(3, 4)
-2. AB = 5
-3. y = (4/3)x + 2/3
-4. Oui, car AB² + AC² = BC²
-
-### Exercice 4
-Initialisation: Pour n=1, 1 = 1×2/2 = 1 ✓
-Hérédité: Si P(n) vraie, alors 1+2+...+n+(n+1) = n(n+1)/2 + (n+1) = (n+1)(n+2)/2 ✓
-`;
 
 export default function ExamGenerator() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedExam, setGeneratedExam] = useState<string | null>(null);
+  const [generatedExam, setGeneratedExam] = useState<ExamData | null>(null);
   const [formData, setFormData] = useState<FormData>({
+    schoolName: "المدرسة الابتدائية",
     subject: "",
     level: "",
-    language: "fr",
-    evaluationType: "summative",
+    language: "ar",
+    evaluationType: "controle1",
+    trimester: "1",
+    schoolYear: "2024-2025",
     duration: 60,
     exerciseCount: 4,
     easyPercent: 30,
@@ -169,12 +129,11 @@ export default function ExamGenerator() {
     hardPercent: 20,
     includeAnswerKey: true,
     objectives: "",
-    uploadedFiles: [],
+    selectedSources: ["devoir.tn"],
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [isDragging, setIsDragging] = useState(false);
 
-  const totalSteps = 3;
+  const totalSteps = 2;
   const progress = (currentStep / totalSteps) * 100;
 
   const validateStep = (step: number): boolean => {
@@ -184,7 +143,7 @@ export default function ExamGenerator() {
       if (!formData.subject) newErrors.subject = "Veuillez sélectionner une matière";
       if (!formData.level) newErrors.level = "Veuillez sélectionner un niveau";
       if (!formData.language) newErrors.language = "Veuillez sélectionner une langue";
-      if (!formData.evaluationType) newErrors.evaluationType = "Veuillez sélectionner un type d'évaluation";
+      if (!formData.schoolName) newErrors.schoolName = "Veuillez entrer le nom de l'école";
     }
 
     if (step === 2) {
@@ -218,14 +177,62 @@ export default function ExamGenerator() {
     if (!validateStep(currentStep)) return;
 
     setIsGenerating(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setGeneratedExam(MOCK_GENERATED_EXAM);
+    
+    // Simulate fetching from Tunisian educational resources
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    // Generate exercises based on Tunisian curriculum
+    const exercises = generateTunisianExercises(
+      formData.subject,
+      formData.level,
+      formData.language,
+      formData.exerciseCount,
+      {
+        easy: formData.easyPercent,
+        medium: formData.mediumPercent,
+        hard: formData.hardPercent,
+      }
+    );
+
+    const evaluationLabel = EVALUATION_TYPES.find(t => t.value === formData.evaluationType)?.label || formData.evaluationType;
+    
+    const examData: ExamData = {
+      schoolName: formData.schoolName,
+      subject: formData.subject,
+      level: formData.level,
+      trimester: `${TRIMESTERS.find(t => t.value === formData.trimester)?.label || formData.trimester}`,
+      schoolYear: formData.schoolYear,
+      duration: `${formData.duration} min`,
+      exercises,
+      includeAnswerKey: formData.includeAnswerKey,
+      language: formData.language,
+    };
+
+    setGeneratedExam(examData);
     setIsGenerating(false);
+    
     toast({
       title: "Examen généré",
-      description: "Votre examen a été créé avec succès.",
+      description: `Examen basé sur les ressources de ${formData.selectedSources.join(", ")}`,
     });
+  };
+
+  const handleDownloadDocx = async () => {
+    if (!generatedExam) return;
+    
+    try {
+      await generateExamDocx(generatedExam);
+      toast({
+        title: "Téléchargement réussi",
+        description: "Le fichier DOCX a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le fichier DOCX.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveDraft = () => {
@@ -233,53 +240,6 @@ export default function ExamGenerator() {
       title: "Brouillon enregistré",
       description: "Votre examen a été sauvegardé comme brouillon.",
     });
-  };
-
-  const handleExport = (format: "pdf" | "markdown" | "json") => {
-    toast({
-      title: `Export ${format.toUpperCase()}`,
-      description: `Téléchargement en cours...`,
-    });
-  };
-
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files) return;
-    const newFiles = Array.from(files).filter(
-      (file) => file.type === "application/pdf"
-    );
-    if (newFiles.length !== files.length) {
-      toast({
-        title: "Fichiers non valides",
-        description: "Seuls les fichiers PDF sont acceptés.",
-        variant: "destructive",
-      });
-    }
-    setFormData((prev) => ({
-      ...prev,
-      uploadedFiles: [...prev.uploadedFiles, ...newFiles],
-    }));
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      uploadedFiles: prev.uploadedFiles.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFileUpload(e.dataTransfer.files);
   };
 
   const adjustDifficulty = (field: "easyPercent" | "mediumPercent" | "hardPercent", value: number) => {
@@ -306,6 +266,15 @@ export default function ExamGenerator() {
     }
   };
 
+  const toggleSource = (sourceId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedSources: prev.selectedSources.includes(sourceId)
+        ? prev.selectedSources.filter(s => s !== sourceId)
+        : [...prev.selectedSources, sourceId],
+    }));
+  };
+
   if (isGenerating) {
     return (
       <DashboardLayout>
@@ -317,8 +286,18 @@ export default function ExamGenerator() {
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">Génération en cours...</h2>
             <p className="text-muted-foreground">
-              L'IA analyse vos documents et crée votre examen personnalisé
+              Récupération des exercices depuis les ressources tunisiennes...
             </p>
+            <div className="flex flex-wrap gap-2 justify-center mt-4">
+              {formData.selectedSources.map(sourceId => {
+                const source = TUNISIAN_SOURCES.find(s => s.id === sourceId);
+                return source ? (
+                  <Badge key={sourceId} variant="secondary" className="text-sm">
+                    {source.icon} {source.name}
+                  </Badge>
+                ) : null;
+              })}
+            </div>
           </div>
           <div className="w-64">
             <Progress value={66} className="h-2" />
@@ -336,7 +315,7 @@ export default function ExamGenerator() {
             <div>
               <h1 className="text-3xl font-bold">Examen Généré</h1>
               <p className="text-muted-foreground">
-                {formData.subject} - {formData.level}
+                {generatedExam.subject} - {generatedExam.level}
               </p>
             </div>
             <div className="flex gap-2">
@@ -344,34 +323,114 @@ export default function ExamGenerator() {
                 <Edit className="h-4 w-4 mr-2" />
                 Modifier
               </Button>
-              <Button variant="outline" onClick={() => handleExport("pdf")}>
+              <Button onClick={handleDownloadDocx} className="bg-primary">
                 <Download className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
-              <Button variant="outline" onClick={() => handleExport("markdown")}>
-                <FileText className="h-4 w-4 mr-2" />
-                Markdown
-              </Button>
-              <Button onClick={() => handleExport("json")}>
-                <Save className="h-4 w-4 mr-2" />
-                Sauvegarder
+                Télécharger DOCX
               </Button>
             </div>
           </div>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="prose prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap font-sans text-foreground bg-transparent p-0">
-                  {generatedExam}
-                </pre>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Aperçu de l'examen
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Header Preview */}
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="font-semibold">{generatedExam.schoolName}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-lg">{formData.evaluationType.includes("synthese") ? "Devoir de Synthèse" : "Devoir de Contrôle"}</p>
+                    <p className="font-medium">{generatedExam.subject}</p>
+                  </div>
+                  <div className="text-right">
+                    <p>Année: {generatedExam.schoolYear}</p>
+                    <p>Classe: {generatedExam.level}</p>
+                    <p>Durée: {generatedExam.duration}</p>
+                  </div>
+                </div>
               </div>
+
+              {/* Exercises Preview */}
+              <div className="space-y-4">
+                {generatedExam.exercises.map((exercise, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold">
+                        {formData.language === "ar" ? `التمرين ${index + 1}` : `Exercice ${index + 1}`}
+                      </h3>
+                      <div className="flex gap-2">
+                        <Badge variant={
+                          exercise.difficulty === "easy" ? "default" :
+                          exercise.difficulty === "medium" ? "secondary" : "destructive"
+                        }>
+                          {exercise.difficulty === "easy" ? "Facile" :
+                           exercise.difficulty === "medium" ? "Moyen" : "Difficile"}
+                        </Badge>
+                        <Badge variant="outline">{exercise.points} pts</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      {exercise.questions.map((q, qIndex) => (
+                        <p key={qIndex}>{qIndex + 1}. {q}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grading Table Preview */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-3">
+                  {formData.language === "ar" ? "سلم التنقيط" : "Barème de notation"}
+                </h3>
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div className="font-medium">Exercice</div>
+                  <div className="font-medium">Points</div>
+                  <div className="font-medium">Difficulté</div>
+                  <div className="font-medium">Note</div>
+                  {generatedExam.exercises.map((ex, i) => (
+                    <>
+                      <div key={`ex-${i}`}>{i + 1}</div>
+                      <div key={`pts-${i}`}>{ex.points}</div>
+                      <div key={`diff-${i}`}>{ex.difficulty}</div>
+                      <div key={`note-${i}`}>___/{ ex.points}</div>
+                    </>
+                  ))}
+                  <div className="font-bold border-t pt-2">Total</div>
+                  <div className="font-bold border-t pt-2">
+                    {generatedExam.exercises.reduce((sum, ex) => sum + ex.points, 0)}
+                  </div>
+                  <div className="border-t pt-2"></div>
+                  <div className="font-bold border-t pt-2">/20</div>
+                </div>
+              </div>
+
+              {generatedExam.includeAnswerKey && (
+                <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/20">
+                  <h3 className="font-semibold mb-3 text-green-700 dark:text-green-400">
+                    {formData.language === "ar" ? "الإصلاح" : "Corrigé inclus"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Le corrigé sera inclus dans le document DOCX téléchargé.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <Button variant="outline" onClick={() => navigate("/dashboard/education")}>
               Retour à l'éducation
+            </Button>
+            <Button onClick={handleDownloadDocx}>
+              <Download className="h-4 w-4 mr-2" />
+              Télécharger DOCX
             </Button>
           </div>
         </div>
@@ -386,7 +445,7 @@ export default function ExamGenerator() {
           <div>
             <h1 className="text-3xl font-bold">Générateur d'Examens</h1>
             <p className="text-muted-foreground">
-              Créez des examens personnalisés avec l'aide de l'IA
+              Créez des examens basés sur les ressources pédagogiques tunisiennes
             </p>
           </div>
           <Button variant="ghost" onClick={() => navigate("/dashboard/education")}>
@@ -394,6 +453,33 @@ export default function ExamGenerator() {
             Retour
           </Button>
         </div>
+
+        {/* Tunisian Resources Banner */}
+        <Card className="bg-gradient-to-r from-red-500/10 via-white/5 to-red-500/10 border-red-500/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <Globe className="h-8 w-8 text-red-500" />
+              <div className="flex-1">
+                <h3 className="font-semibold">Ressources Pédagogiques Tunisiennes</h3>
+                <p className="text-sm text-muted-foreground">
+                  Exercices et examens basés sur le programme officiel tunisien
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {TUNISIAN_SOURCES.map(source => (
+                  <Badge 
+                    key={source.id}
+                    variant={formData.selectedSources.includes(source.id) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleSource(source.id)}
+                  >
+                    {source.icon} {source.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Progress */}
         <div className="space-y-2">
@@ -409,9 +495,6 @@ export default function ExamGenerator() {
             <span className={cn(currentStep >= 2 && "text-primary font-medium")}>
               Paramètres
             </span>
-            <span className={cn(currentStep >= 3 && "text-primary font-medium")}>
-              Références
-            </span>
           </div>
         </div>
 
@@ -420,7 +503,6 @@ export default function ExamGenerator() {
             <CardTitle>
               {currentStep === 1 && "Informations de base"}
               {currentStep === 2 && "Paramètres de l'examen"}
-              {currentStep === 3 && "Documents de référence"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -428,54 +510,73 @@ export default function ExamGenerator() {
             {currentStep === 1 && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Matière *</Label>
-                  <Select
-                    value={formData.subject}
-                    onValueChange={(v) => setFormData((prev) => ({ ...prev, subject: v }))}
-                  >
-                    <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Sélectionner une matière" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.map((subject) => (
-                        <SelectItem key={subject} value={subject}>
-                          {subject}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.subject && (
-                    <p className="text-sm text-destructive">{errors.subject}</p>
+                  <Label htmlFor="schoolName">Nom de l'établissement *</Label>
+                  <div className="flex gap-2">
+                    <School className="h-5 w-5 mt-2 text-muted-foreground" />
+                    <Input
+                      id="schoolName"
+                      placeholder="المدرسة الابتدائية / École Primaire"
+                      value={formData.schoolName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, schoolName: e.target.value }))}
+                      className={errors.schoolName ? "border-destructive" : ""}
+                    />
+                  </div>
+                  {errors.schoolName && (
+                    <p className="text-sm text-destructive">{errors.schoolName}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="level">Niveau *</Label>
-                  <Select
-                    value={formData.level}
-                    onValueChange={(v) => setFormData((prev) => ({ ...prev, level: v }))}
-                  >
-                    <SelectTrigger className={errors.level ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Sélectionner un niveau" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LEVELS.map((group) => (
-                        <div key={group.group}>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                            {group.group}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Matière *</Label>
+                    <Select
+                      value={formData.subject}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, subject: v }))}
+                    >
+                      <SelectTrigger className={errors.subject ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Sélectionner une matière" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUBJECTS.map((subject) => (
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.subject && (
+                      <p className="text-sm text-destructive">{errors.subject}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="level">Niveau *</Label>
+                    <Select
+                      value={formData.level}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, level: v }))}
+                    >
+                      <SelectTrigger className={errors.level ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Sélectionner un niveau" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVELS.map((group) => (
+                          <div key={group.group}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                              {group.group}
+                            </div>
+                            {group.items.map((level) => (
+                              <SelectItem key={level} value={level}>
+                                {level}
+                              </SelectItem>
+                            ))}
                           </div>
-                          {group.items.map((level) => (
-                            <SelectItem key={level} value={level}>
-                              {level}
-                            </SelectItem>
-                          ))}
-                        </div>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.level && (
-                    <p className="text-sm text-destructive">{errors.level}</p>
-                  )}
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.level && (
+                      <p className="text-sm text-destructive">{errors.level}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -483,7 +584,7 @@ export default function ExamGenerator() {
                     <Label htmlFor="language">Langue *</Label>
                     <Select
                       value={formData.language}
-                      onValueChange={(v) => setFormData((prev) => ({ ...prev, language: v }))}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, language: v as "fr" | "ar" | "en" }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -499,6 +600,18 @@ export default function ExamGenerator() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="schoolYear">Année scolaire</Label>
+                    <Input
+                      id="schoolYear"
+                      placeholder="2024-2025"
+                      value={formData.schoolYear}
+                      onChange={(e) => setFormData(prev => ({ ...prev, schoolYear: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="evaluationType">Type d'évaluation *</Label>
                     <Select
                       value={formData.evaluationType}
@@ -511,6 +624,25 @@ export default function ExamGenerator() {
                         {EVALUATION_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trimester">Trimestre</Label>
+                    <Select
+                      value={formData.trimester}
+                      onValueChange={(v) => setFormData((prev) => ({ ...prev, trimester: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TRIMESTERS.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -624,77 +756,9 @@ export default function ExamGenerator() {
                     }
                   />
                   <Label htmlFor="includeAnswerKey" className="cursor-pointer">
-                    Inclure le corrigé
+                    Inclure le corrigé (الإصلاح)
                   </Label>
                 </div>
-              </div>
-            )}
-
-            {/* Step 3: Reference Materials */}
-            {currentStep === 3 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div
-                  className={cn(
-                    "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                    isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25",
-                    "hover:border-primary/50"
-                  )}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium mb-1">
-                    Glissez-déposez vos fichiers PDF ici
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    ou cliquez pour sélectionner
-                  </p>
-                  <Input
-                    type="file"
-                    accept=".pdf"
-                    multiple
-                    className="hidden"
-                    id="file-upload"
-                    onChange={(e) => handleFileUpload(e.target.files)}
-                  />
-                  <Button variant="outline" asChild>
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      Parcourir
-                    </label>
-                  </Button>
-                </div>
-
-                {formData.uploadedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Fichiers téléchargés ({formData.uploadedFiles.length})</Label>
-                    <div className="space-y-2">
-                      {formData.uploadedFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-primary" />
-                            <div>
-                              <p className="text-sm font-medium">{file.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="objectives">Objectifs pédagogiques (optionnel)</Label>
@@ -705,7 +769,7 @@ export default function ExamGenerator() {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, objectives: e.target.value }))
                     }
-                    rows={4}
+                    rows={3}
                   />
                 </div>
               </div>
@@ -727,7 +791,7 @@ export default function ExamGenerator() {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={handleSaveDraft}>
               <Save className="h-4 w-4 mr-2" />
-              Enregistrer brouillon
+              Brouillon
             </Button>
 
             {currentStep < totalSteps ? (
@@ -738,7 +802,7 @@ export default function ExamGenerator() {
             ) : (
               <Button onClick={handleGenerate}>
                 <BookOpen className="h-4 w-4 mr-2" />
-                Générer l'examen
+                Générer & Télécharger DOCX
               </Button>
             )}
           </div>
