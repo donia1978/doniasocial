@@ -19,9 +19,21 @@ import {
   Search,
   Loader2,
   Users,
-  User
+  Phone,
+  Video,
+  MoreVertical,
+  Paperclip,
+  Smile,
+  Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VideoCallModal } from "@/components/chat/VideoCallModal";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 interface Conversation {
   id: string;
@@ -67,6 +79,7 @@ export default function Chat() {
   const [newConversationDialog, setNewConversationDialog] = useState(false);
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [callModal, setCallModal] = useState<{ open: boolean; isVideo: boolean }>({ open: false, isVideo: false });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -81,7 +94,6 @@ export default function Chat() {
     if (!user) return;
     setLoading(true);
 
-    // Get conversations where user is a participant
     const { data: participations, error: partError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -113,7 +125,6 @@ export default function Chat() {
       return;
     }
 
-    // Get other participants for each conversation
     const conversationsWithParticipants = await Promise.all(
       (convs || []).map(async (conv) => {
         const { data: participants } = await supabase
@@ -132,7 +143,6 @@ export default function Chat() {
           otherParticipant = profile;
         }
 
-        // Get last message
         const { data: lastMsg } = await supabase
           .from("messages")
           .select("content")
@@ -165,7 +175,6 @@ export default function Chat() {
       return;
     }
 
-    // Get sender profiles
     const messagesWithSenders = await Promise.all(
       (data || []).map(async (msg) => {
         const { data: profile } = await supabase
@@ -194,7 +203,6 @@ export default function Chat() {
     fetchAllUsers();
   }, [user]);
 
-  // Real-time subscription for messages
   useEffect(() => {
     if (!selectedConversation) return;
 
@@ -210,7 +218,6 @@ export default function Chat() {
         },
         async (payload) => {
           const newMsg = payload.new as Message;
-          // Get sender profile
           const { data: profile } = await supabase
             .from("profiles")
             .select("email, full_name")
@@ -249,7 +256,6 @@ export default function Chat() {
       toast.error("Erreur lors de l'envoi du message");
     } else {
       setNewMessage("");
-      // Update conversation updated_at
       await supabase
         .from("conversations")
         .update({ updated_at: new Date().toISOString() })
@@ -261,7 +267,6 @@ export default function Chat() {
   const handleCreateConversation = async () => {
     if (!selectedUserId || !user) return;
 
-    // Check if conversation already exists
     const { data: existingParticipations } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -277,7 +282,6 @@ export default function Chat() {
           .maybeSingle();
 
         if (otherPart) {
-          // Conversation exists, select it
           const conv = conversations.find(c => c.id === part.conversation_id);
           if (conv) {
             setSelectedConversation(conv);
@@ -289,7 +293,6 @@ export default function Chat() {
       }
     }
 
-    // Create new conversation
     const { data: newConv, error: convError } = await supabase
       .from("conversations")
       .insert({ is_group: false })
@@ -301,7 +304,6 @@ export default function Chat() {
       return;
     }
 
-    // Add both participants
     const { error: partError } = await supabase
       .from("conversation_participants")
       .insert([
@@ -318,6 +320,12 @@ export default function Chat() {
     setNewConversationDialog(false);
     setSelectedUserId("");
     fetchConversations();
+  };
+
+  const startCall = (isVideo: boolean) => {
+    if (!selectedConversation) return;
+    setCallModal({ open: true, isVideo });
+    toast.info(isVideo ? "Démarrage de l'appel vidéo..." : "Démarrage de l'appel audio...");
   };
 
   const getInitials = (name: string | null | undefined, email: string | null | undefined) => {
@@ -432,18 +440,22 @@ export default function Chat() {
                         selectedConversation?.id === conv.id && "bg-accent"
                       )}
                     >
-                      <Avatar>
-                        <AvatarFallback>
-                          {conv.is_group ? (
-                            <Users className="h-4 w-4" />
-                          ) : (
-                            getInitials(
-                              conv.other_participant?.full_name,
-                              conv.other_participant?.email
-                            )
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar>
+                          <AvatarFallback>
+                            {conv.is_group ? (
+                              <Users className="h-4 w-4" />
+                            ) : (
+                              getInitials(
+                                conv.other_participant?.full_name,
+                                conv.other_participant?.email
+                              )
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Online indicator */}
+                        <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
+                      </div>
                       <div className="flex-1 min-w-0 text-left">
                         <p className="font-medium truncate">
                           {conv.title || conv.other_participant?.full_name || conv.other_participant?.email || "Conversation"}
@@ -467,32 +479,75 @@ export default function Chat() {
           {selectedConversation ? (
             <>
               <CardHeader className="border-b pb-3">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      {selectedConversation.is_group ? (
-                        <Users className="h-4 w-4" />
-                      ) : (
-                        getInitials(
-                          selectedConversation.other_participant?.full_name,
-                          selectedConversation.other_participant?.email
-                        )
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">
-                      {selectedConversation.title || 
-                       selectedConversation.other_participant?.full_name || 
-                       selectedConversation.other_participant?.email || 
-                       "Conversation"}
-                    </CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Avatar>
+                        <AvatarFallback>
+                          {selectedConversation.is_group ? (
+                            <Users className="h-4 w-4" />
+                          ) : (
+                            getInitials(
+                              selectedConversation.other_participant?.full_name,
+                              selectedConversation.other_participant?.email
+                            )
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">
+                        {selectedConversation.title || 
+                         selectedConversation.other_participant?.full_name || 
+                         selectedConversation.other_participant?.email || 
+                         "Conversation"}
+                      </CardTitle>
+                      <p className="text-xs text-green-600">En ligne</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => startCall(false)}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => startCall(true)}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Video className="h-5 w-5" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Voir le profil</DropdownMenuItem>
+                        <DropdownMenuItem>Rechercher dans la conversation</DropdownMenuItem>
+                        <DropdownMenuItem>Notifications silencieuses</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Bloquer</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden">
                 <ScrollArea className="h-full p-4">
                   <div className="space-y-4">
+                    {messages.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>Démarrez la conversation en envoyant un message</p>
+                      </div>
+                    )}
                     {messages.map((msg) => {
                       const isOwn = msg.sender_id === user?.id;
                       return (
@@ -537,14 +592,24 @@ export default function Chat() {
                 </ScrollArea>
               </CardContent>
               <div className="p-4 border-t">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
+                <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
+                  <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
+                    <Image className="h-5 w-5" />
+                  </Button>
                   <Input
                     placeholder="Écrivez un message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     disabled={sendingMessage}
+                    className="flex-1"
                   />
-                  <Button type="submit" disabled={sendingMessage || !newMessage.trim()}>
+                  <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
+                    <Smile className="h-5 w-5" />
+                  </Button>
+                  <Button type="submit" disabled={sendingMessage || !newMessage.trim()} className="flex-shrink-0">
                     {sendingMessage ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -572,6 +637,14 @@ export default function Chat() {
           )}
         </Card>
       </div>
+
+      {/* Video/Audio Call Modal */}
+      <VideoCallModal
+        open={callModal.open}
+        onClose={() => setCallModal({ open: false, isVideo: false })}
+        participantName={selectedConversation?.other_participant?.full_name || selectedConversation?.other_participant?.email || "Participant"}
+        isVideoCall={callModal.isVideo}
+      />
     </DashboardLayout>
   );
 }
