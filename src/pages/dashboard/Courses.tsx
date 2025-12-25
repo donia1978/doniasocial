@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -20,8 +21,17 @@ import {
   GraduationCap,
   Loader2,
   ArrowLeft,
-  FileQuestion
+  FileQuestion,
+  Star,
+  Bookmark,
+  BookmarkCheck,
+  Award
 } from "lucide-react";
+import { CourseFilters } from "@/components/courses/CourseFilters";
+import { CourseReviews } from "@/components/courses/CourseReviews";
+import { LessonNotes } from "@/components/courses/LessonNotes";
+import { CourseDiscussions } from "@/components/courses/CourseDiscussions";
+import { CourseCertificate } from "@/components/courses/CourseCertificate";
 
 interface Course {
   id: string;
@@ -32,6 +42,8 @@ interface Course {
   category: string;
   difficulty: string;
   duration_hours: number;
+  average_rating: number | null;
+  total_enrollments: number | null;
 }
 
 interface Lesson {
@@ -83,7 +95,14 @@ export default function Courses() {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [activeTab, setActiveTab] = useState("all");
   
   // Course detail view
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -99,6 +118,44 @@ export default function Courses() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+
+  const categories = useMemo(() => {
+    const cats = new Set(courses.map(c => c.category).filter(Boolean));
+    return Array.from(cats);
+  }, [courses]);
+
+  const filteredCourses = useMemo(() => {
+    let filtered = courses;
+    
+    // Tab filter
+    if (activeTab === "enrolled") {
+      filtered = filtered.filter(c => enrollments.some(e => e.course_id === c.id));
+    } else if (activeTab === "bookmarked") {
+      filtered = filtered.filter(c => bookmarks.includes(c.id));
+    }
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(c => 
+        c.title.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query) ||
+        c.instructor_name?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(c => c.category === selectedCategory);
+    }
+    
+    // Difficulty filter
+    if (selectedDifficulty !== "all") {
+      filtered = filtered.filter(c => c.difficulty === selectedDifficulty);
+    }
+    
+    return filtered;
+  }, [courses, enrollments, bookmarks, activeTab, searchQuery, selectedCategory, selectedDifficulty]);
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -123,6 +180,15 @@ export default function Courses() {
       .select("course_id")
       .eq("user_id", user.id);
     setEnrollments(data || []);
+  };
+
+  const fetchBookmarks = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("course_bookmarks")
+      .select("course_id")
+      .eq("user_id", user.id);
+    setBookmarks(data?.map(b => b.course_id) || []);
   };
 
   const fetchLessons = async (courseId: string) => {
@@ -158,7 +224,6 @@ export default function Courses() {
         .eq("quiz_id", quizData.id)
         .order("order_index", { ascending: true });
       
-      // Parse options from JSON
       const parsedQuestions = (questions || []).map(q => ({
         ...q,
         options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
@@ -173,6 +238,7 @@ export default function Courses() {
   useEffect(() => {
     fetchCourses();
     fetchEnrollments();
+    fetchBookmarks();
   }, [user]);
 
   const handleEnroll = async (courseId: string) => {
@@ -194,6 +260,26 @@ export default function Courses() {
     }
   };
 
+  const toggleBookmark = async (courseId: string) => {
+    if (!user) return;
+    
+    if (bookmarks.includes(courseId)) {
+      await supabase
+        .from("course_bookmarks")
+        .delete()
+        .eq("course_id", courseId)
+        .eq("user_id", user.id);
+      setBookmarks(prev => prev.filter(id => id !== courseId));
+      toast.success("Cours retiré des favoris");
+    } else {
+      await supabase
+        .from("course_bookmarks")
+        .insert({ course_id: courseId, user_id: user.id });
+      setBookmarks(prev => [...prev, courseId]);
+      toast.success("Cours ajouté aux favoris");
+    }
+  };
+
   const handleSelectCourse = async (course: Course) => {
     setSelectedCourse(course);
     setSelectedLesson(null);
@@ -207,7 +293,6 @@ export default function Courses() {
     setSelectedLesson(lesson);
     await fetchQuiz(lesson.id);
     
-    // Mark lesson as in progress
     if (user) {
       await supabase
         .from("lesson_progress")
@@ -290,6 +375,11 @@ export default function Courses() {
     return Math.round((completed / lessons.length) * 100);
   };
 
+  const isCourseCompleted = () => {
+    if (lessons.length === 0) return false;
+    return lessons.every(l => isLessonCompleted(l.id));
+  };
+
   // Course detail view
   if (selectedCourse) {
     return (
@@ -306,6 +396,16 @@ export default function Courses() {
             <ArrowLeft className="h-4 w-4" />
             Retour aux cours
           </Button>
+
+          {/* Certificate banner if course is completed */}
+          {isCourseCompleted() && (
+            <CourseCertificate
+              courseId={selectedCourse.id}
+              courseTitle={selectedCourse.title}
+              instructorName={selectedCourse.instructor_name}
+              isCompleted={isCourseCompleted()}
+            />
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
             {/* Sidebar with lessons */}
@@ -360,6 +460,9 @@ export default function Courses() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Notes for selected lesson */}
+              {selectedLesson && <LessonNotes lessonId={selectedLesson.id} />}
             </div>
 
             {/* Main content */}
@@ -383,14 +486,14 @@ export default function Courses() {
                         </div>
                       )}
                       {selectedLesson.content && (
-                        <div className="mt-4 prose prose-sm max-w-none">
-                          <p>{selectedLesson.content}</p>
+                        <div className="mt-4 prose prose-sm max-w-none dark:prose-invert">
+                          <p className="whitespace-pre-wrap">{selectedLesson.content}</p>
                         </div>
                       )}
                     </CardContent>
                   </Card>
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     {quiz && quizQuestions.length > 0 && (
                       <Button onClick={startQuiz} className="gap-2">
                         <FileQuestion className="h-4 w-4" />
@@ -404,6 +507,9 @@ export default function Courses() {
                       </Button>
                     )}
                   </div>
+
+                  {/* Lesson Discussion */}
+                  <CourseDiscussions courseId={selectedCourse.id} lessonId={selectedLesson.id} />
 
                   {/* Quiz Dialog */}
                   <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
@@ -507,6 +613,14 @@ export default function Courses() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Course Reviews */}
+              <CourseReviews courseId={selectedCourse.id} />
+
+              {/* General Course Discussion */}
+              {!selectedLesson && (
+                <CourseDiscussions courseId={selectedCourse.id} />
+              )}
             </div>
           </div>
         </div>
@@ -558,36 +672,93 @@ export default function Courses() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Cours terminés</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Favoris</CardTitle>
+              <Bookmark className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{bookmarks.length}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">Tous les cours</TabsTrigger>
+            <TabsTrigger value="enrolled">Mes cours</TabsTrigger>
+            <TabsTrigger value="bookmarked">Favoris</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Filters */}
+        <CourseFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          selectedDifficulty={selectedDifficulty}
+          onDifficultyChange={setSelectedDifficulty}
+          categories={categories}
+        />
 
         {/* Course Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">
+                {activeTab === "enrolled" 
+                  ? "Vous n'êtes inscrit à aucun cours"
+                  : activeTab === "bookmarked"
+                  ? "Aucun cours en favoris"
+                  : "Aucun cours trouvé"
+                }
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            {filteredCourses.map((course) => (
+              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center relative">
                   <BookOpen className="h-16 w-16 text-primary/50" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(course.id);
+                    }}
+                  >
+                    {bookmarks.includes(course.id) ? (
+                      <BookmarkCheck className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Bookmark className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <Badge className={difficultyColors[course.difficulty]}>
                       {difficultyLabels[course.difficulty]}
                     </Badge>
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {course.duration_hours}h
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {course.average_rating && course.average_rating > 0 && (
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          {course.average_rating.toFixed(1)}
+                        </span>
+                      )}
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {course.duration_hours}h
+                      </span>
+                    </div>
                   </div>
                   <CardTitle className="line-clamp-1">{course.title}</CardTitle>
                   <CardDescription className="line-clamp-2">
