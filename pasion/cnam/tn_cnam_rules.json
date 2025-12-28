@@ -1,0 +1,31 @@
+﻿{
+  "country": "TN",
+  "payer": "CNAM",
+  "version": "0.3.0",
+  "generatedAt": "2025-12-28T09:18:04.1389057+01:00",
+  "sources": [
+    {
+      "name": "CNAM - Liste des médicaments couverts (VEI) régime de base",
+      "url": "https://www.cnam.nat.tn/doc/upload/LISTE%20DES%20MEDICAMENTS%20CLASSES%20EN%20VEI%20COUVERTS%20PAR%20LE%20REGIME%20DE%20BASE14-10-2025.xls",
+      "path": "pasion\cnam\sources\cnam_vei_regime_base.xls",
+      "sha256": ""
+    },
+    {
+      "name": "CNAM - Spécialités soumises à l'accord préalable (classées par DCI)",
+      "url": "https://www.cnam.nat.tn/doc/upload/list_APclmed_031024.pdf",
+      "path": "pasion\cnam\sources\cnam_list_APclmed.pdf",
+      "sha256": ""
+    }
+  ],
+  "default": { "renewalLeadDays": 7, "maxDispenseDaysIfUnknown": 30 },
+  "disclaimer": "Règles CNAM: à compléter/valider à partir des textes officiels. DONIA ne génère pas de prescription finale automatiquement. Validation humaine obligatoire.",
+  "conditions": [
+    { "code": "CHRONIC_GENERIC", "label": "Maladie chronique (générique)", "renewal": { "dispenseDays": 30, "appointmentOffsetDays": 23 } }
+  ],
+  "priorAgreement": {
+    "enabled": true,
+    "matchMode": "tag_from_sources",
+    "notes": "Les médicaments soumis à accord préalable seront taggés après enrichissement (par extraction PDF / mapping DCI)."
+  },
+  "medicationRules": []
+}

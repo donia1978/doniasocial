@@ -1,0 +1,22 @@
+﻿services:
+  donia-web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: donia-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - ai-proxy
+    restart: unless-stopped
+
+  ai-proxy:
+    image: node:20-alpine
+    container_name: donia-ai-proxy
+    working_dir: /app
+    volumes:
+      - ../server:/app/server:ro
+    command: ["node","/app/server/ai-proxy.mjs"]
+    environment:
+      - DONIA_AI_PROXY_PORT=8787
+    restart: unless-stopped

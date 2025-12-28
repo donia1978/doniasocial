@@ -1,6 +1,4 @@
-﻿import MedicalRenewals from "./pages/dashboard/MedicalRenewals";
-import MedicalPrescriptions from "./pages/dashboard/MedicalPrescriptions";
-import MedicalScheduling from "./pages/dashboard/MedicalScheduling";
+﻿import MedicalScheduling from "./pages/dashboard/MedicalScheduling";
 import TunisiaInfo from "./pages/info/tunisia";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -70,9 +68,7 @@ const App = () => (
         <Route path="/medical/scheduling" element={<MedicalScheduling />} />
         <Route path="/medical/calculators" element={<Medical />} />
         <Route path="/research" element={<Research />} />
-        <Route path="/statistics" element={<Statistics />} />        <Route path="/medical/prescriptions" element={<MedicalPrescriptions />} />
-        <Route path="/medical/renewals" element={<MedicalRenewals />} />
-
+        <Route path="/statistics" element={<Statistics />} />
 
 
               <Route path="*" element={<NotFound />} />
@@ -86,7 +82,6 @@ const App = () => (
 );
 
 export default App;
-
 
 
 

@@ -1,0 +1,21 @@
+﻿{
+  "provider": "deepseek",
+  "authEnv": {
+    "preferred": "DEEPSEEK_TOON",
+    "fallback": "DEEPSEEK_API_KEY"
+  },
+  "allowedActions": [
+    "medical_summary",
+    "medical_calculator_explain",
+    "draft_prescription"
+  ],
+  "disallowed": {
+    "final_prescription": true,
+    "diagnosis": true
+  },
+  "logging": {
+    "storeRequestText": false,
+    "storeResponseText": false,
+    "storeHashes": true
+  }
+}

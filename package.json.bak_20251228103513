@@ -1,6 +1,5 @@
 ﻿{
     "scripts":  {
-                    "medical:scheduler":  "node server/medical-scheduler.mjs",
                     "preview":  "vite preview",
                     "build":  "vite build",
                     "lint":  "eslint .",
