@@ -130,14 +130,56 @@
 
 @layer base {
   * {
-    @apply border-border;
-  }
-
-  html {
-    @apply dark;
+    @apply border-border transition-colors duration-200;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+}
+
+/* Light mode styles */
+:root {
+  --background: 0 0% 98%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 0 72% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 72% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 0 72% 50%;
+  --medical: 0 72% 50%;
+  --medical-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 5%;
+  --info: 0 0% 40%;
+  --info-foreground: 0 0% 100%;
+  --chart-1: 0 72% 50%;
+  --chart-2: 0 0% 30%;
+  --chart-3: 0 60% 40%;
+  --chart-4: 0 0% 50%;
+  --chart-5: 0 50% 35%;
+  --gradient-start: 0 72% 50%;
+  --gradient-end: 0 50% 35%;
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 0 0% 10%;
+  --sidebar-primary: 0 72% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 94%;
+  --sidebar-accent-foreground: 0 0% 10%;
+  --sidebar-border: 0 0% 88%;
+  --sidebar-ring: 0 72% 50%;
 }
