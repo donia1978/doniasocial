@@ -7,13 +7,13 @@
     {
       "name": "CNAM - Liste des médicaments couverts (VEI) régime de base",
       "url": "https://www.cnam.nat.tn/doc/upload/LISTE%20DES%20MEDICAMENTS%20CLASSES%20EN%20VEI%20COUVERTS%20PAR%20LE%20REGIME%20DE%20BASE14-10-2025.xls",
-      "path": "pasion\cnam\sources\cnam_vei_regime_base.xls",
+      "path": "pasion/cnam/sources/cnam_vei_regime_base.xls",
       "sha256": ""
     },
     {
       "name": "CNAM - Spécialités soumises à l'accord préalable (classées par DCI)",
       "url": "https://www.cnam.nat.tn/doc/upload/list_APclmed_031024.pdf",
-      "path": "pasion\cnam\sources\cnam_list_APclmed.pdf",
+      "path": "pasion/cnam/sources/cnam_list_APclmed.pdf",
       "sha256": ""
     }
   ],
@@ -29,3 +29,4 @@
   },
   "medicationRules": []
 }
+

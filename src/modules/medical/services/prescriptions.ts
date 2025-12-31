@@ -85,7 +85,7 @@ export async function createPrescriptionDraft(args: {
       user_id: args.user_id,
       type: "medical_renewal",
       title: "Renouvellement médicament",
-      message: Prévoir RDV de renouvellement (CNAM): ,
+      message: "Prévoir RDV de renouvellement (CNAM):",
       created_at: new Date().toISOString()
     });
   } catch (_) {}
@@ -116,3 +116,5 @@ export async function listRenewalPlans(user_id: string, patient_id?: string) {
   if (error) throw error;
   return data ?? [];
 }
+
+

@@ -40,7 +40,7 @@ try {
     user_id: uid!,
     type: "medical_prescription",
     title: "Nouvelle ordonnance (DRAFT)",
-    message: Ordonnance DRAFT créée. Renouvellement/RDV calculés (raison: ).,
+    message: "Ordonnance DRAFT créée. Renouvellement/RDV calculés (raison: ).",
     email_to: emailTo.trim() ? emailTo.trim() : null
   });
 } catch {}
@@ -54,11 +54,11 @@ try {
     doc.setFontSize(14);
     doc.text("DONIA - Ordonnance (DRAFT/VALIDATED)", 10, 12);
     doc.setFontSize(10);
-    doc.text(ID: , 10, 20);
-    doc.text(Patient: , 10, 26);
-    doc.text(Type:  | Statut: , 10, 32);
-    doc.text(Payer:  (), 10, 38);
-    doc.text(Créée: , 10, 44);
+    doc.text("ID: ", 10, 20);
+    doc.text("Patient: ", 10, 26);
+    doc.text("Type: | Statut: ", 10, 32);
+    doc.text("Payer: ()", 10, 38);
+    doc.text("Créée: ", 10, 44);
 
     let y = 54;
     doc.setFontSize(12);
@@ -66,7 +66,7 @@ try {
 
     doc.setFontSize(10);
     for (const it of (rx.pasion_prescription_items ?? [])) {
-      doc.text(-  |  |  | j | Qté: , 10, y);
+      doc.text("-  |  |  | j | Qté: ", 10, y);
       y += 6;
       if (y > 270) { doc.addPage(); y = 20; }
     }
@@ -130,7 +130,7 @@ try {
       >
         <div className="font-medium">{m.dci}</div>
         <div className="text-xs text-muted-foreground">
-          {m.atc ? ATC:  •  : ""}{m.form ?? ""} {m.strength ?? ""} {m.reimbursable === false ? "• non couvert" : ""}
+          {m.atc ? "ATC: " + m.atc + " • " : ""}{m.form ?? ""} {m.strength ?? ""} {m.reimbursable === false ? "• non couvert" : ""}
         </div>
       </button>
     ))}
@@ -181,6 +181,12 @@ try {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

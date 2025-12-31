@@ -1,4 +1,4 @@
-﻿{
+{
     "scripts":  {
                     "medical:scheduler":  "node server/medical-scheduler.mjs",
                     "preview":  "vite preview",
