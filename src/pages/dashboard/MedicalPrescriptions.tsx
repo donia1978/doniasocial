@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { createPrescriptionDraft, listPrescriptions } from "@/modules/medical/services/prescriptions";
 import { jsPDF } from "jspdf";
-import { searchCnamMedications } from "@/modules/medical/services/cnamMeds";
+import { searchCnamMedications, CnamMedication } from "@/modules/medical/services/cnamMeds";
 import { createNotification } from "@/modules/notifications/service";
 
 export default function MedicalPrescriptions() {
   const { supabaseUser } = useUser();
   const [patientId, setPatientId] = useState("");
+  const [emailTo, setEmailTo] = useState("");
   const [kind, setKind] = useState<"ordinary"|"chronic">("ordinary");
 
   const [dci, setDci] = useState("");
@@ -20,8 +21,32 @@ export default function MedicalPrescriptions() {
   const [durationDays, setDurationDays] = useState<number>(30);
   const [quantity, setQuantity] = useState<number>(1);
 
+  // CNAM medication search
+  const [medQuery, setMedQuery] = useState("");
+  const [medSug, setMedSug] = useState<CnamMedication[]>([]);
+
   const [rows, setRows] = useState<any[]>([]);
   const uid = supabaseUser?.id;
+
+  const onMedQueryChange = useCallback(async (q: string) => {
+    setMedQuery(q);
+    if (q.length >= 2) {
+      try {
+        const results = await searchCnamMedications(q);
+        setMedSug(results);
+      } catch {
+        setMedSug([]);
+      }
+    } else {
+      setMedSug([]);
+    }
+  }, []);
+
+  const pickMed = useCallback((med: CnamMedication) => {
+    setDci(med.dci);
+    setMedQuery("");
+    setMedSug([]);
+  }, []);
 
   async function refresh() {
     if (!uid) return;
@@ -34,18 +59,32 @@ export default function MedicalPrescriptions() {
     if (!patientId) throw new Error("patient_id requis");
     if (!dci.trim()) throw new Error("DCI requise");
 
-    const res = await createPrescriptionDraft({});
-try {
-  await createNotification({
-    user_id: uid!,
-    type: "medical_prescription",
-    title: "Nouvelle ordonnance (DRAFT)",
-    message: "Ordonnance DRAFT créée. Renouvellement/RDV calculés (raison: ).",
-    email_to: emailTo.trim() ? emailTo.trim() : null
-  });
-} catch {}
+    await createPrescriptionDraft({
+      user_id: uid,
+      patient_id: patientId,
+      kind,
+      items: [{
+        dci: dci.trim(),
+        dosage: dosage.trim() || undefined,
+        frequency: frequency.trim() || undefined,
+        duration_days: durationDays,
+        quantity
+      }]
+    });
 
-    setDci(""); setDosage(""); setFrequency("");
+    try {
+      await createNotification({
+        user_id: uid,
+        type: "medical_prescription",
+        title: "Nouvelle ordonnance (DRAFT)",
+        message: "Ordonnance DRAFT créée. Renouvellement/RDV calculés.",
+        email_to: emailTo.trim() ? emailTo.trim() : null
+      });
+    } catch {}
+
+    setDci(""); 
+    setDosage(""); 
+    setFrequency("");
     await refresh();
   }
 
@@ -54,11 +93,11 @@ try {
     doc.setFontSize(14);
     doc.text("DONIA - Ordonnance (DRAFT/VALIDATED)", 10, 12);
     doc.setFontSize(10);
-    doc.text("ID: ", 10, 20);
-    doc.text("Patient: ", 10, 26);
-    doc.text("Type: | Statut: ", 10, 32);
-    doc.text("Payer: ()", 10, 38);
-    doc.text("Créée: ", 10, 44);
+    doc.text(`ID: ${rx.id || ""}`, 10, 20);
+    doc.text(`Patient: ${rx.patient_id || ""}`, 10, 26);
+    doc.text(`Type: ${rx.kind || ""} | Statut: ${rx.status || ""}`, 10, 32);
+    doc.text(`Payer: CNAM (TN)`, 10, 38);
+    doc.text(`Créée: ${rx.created_at ? new Date(rx.created_at).toLocaleString() : ""}`, 10, 44);
 
     let y = 54;
     doc.setFontSize(12);
@@ -66,14 +105,14 @@ try {
 
     doc.setFontSize(10);
     for (const it of (rx.pasion_prescription_items ?? [])) {
-      doc.text("-  |  |  | j | Qté: ", 10, y);
+      doc.text(`- ${it.dci || ""} | ${it.dosage || ""} | ${it.frequency || ""} | ${it.duration_days || ""}j | Qté: ${it.quantity || ""}`, 10, y);
       y += 6;
       if (y > 270) { doc.addPage(); y = 20; }
     }
 
     doc.setFontSize(9);
     doc.text("IMPORTANT: Document généré par DONIA. Toute prescription doit être validée par un médecin habilité.", 10, 285);
-    doc.save(DONIA_ordonnance_.pdf);
+    doc.save(`DONIA_ordonnance_${rx.id || Date.now()}.pdf`);
   }
 
   const can = useMemo(() => !!uid, [uid]);
@@ -92,13 +131,13 @@ try {
             <div className="space-y-1">
               <div className="text-sm font-medium">Patient ID</div>
               <Input value={patientId} onChange={(e)=>setPatientId(e.target.value)} placeholder="UUID patient (pasion_patients.id)" />
-            <div className="mt-3 space-y-1">
-              <div className="text-sm font-medium">Email patient (pour notifications)</div>
-              <Input value={emailTo} onChange={(e)=>setEmailTo(e.target.value)} placeholder="ex: patient@email.com" />
-              <div className="text-xs text-muted-foreground">
-                Si rempli: DONIA envoie la notification par email + la garde sur la plateforme.
+              <div className="mt-3 space-y-1">
+                <div className="text-sm font-medium">Email patient (pour notifications)</div>
+                <Input value={emailTo} onChange={(e)=>setEmailTo(e.target.value)} placeholder="ex: patient@email.com" />
+                <div className="text-xs text-muted-foreground">
+                  Si rempli: DONIA envoie la notification par email + la garde sur la plateforme.
+                </div>
               </div>
-            </div>
             </div>
 
             <div className="space-y-1">
@@ -118,24 +157,29 @@ try {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="text-sm font-medium">DCI (recherche CNAM)</div>
-<Input value={medQuery} onChange={(e)=>onMedQueryChange(e.target.value)} placeholder="Tape 2+ lettres (CNAM) : ex Metformine" />
-{medSug.length > 0 && (
-  <div className="mt-2 rounded-lg border bg-background p-2 max-h-48 overflow-auto">
-    {medSug.map((m:any)=>(
-      <button
-        key={m.id}
-        type="button"
-        className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
-        onClick={()=>pickMed(m)}
-      >
-        <div className="font-medium">{m.dci}</div>
-        <div className="text-xs text-muted-foreground">
-          {m.atc ? "ATC: " + m.atc + " • " : ""}{m.form ?? ""} {m.strength ?? ""} {m.reimbursable === false ? "• non couvert" : ""}
-        </div>
-      </button>
-    ))}
-  </div>
-)}
+                <Input value={medQuery} onChange={(e)=>onMedQueryChange(e.target.value)} placeholder="Tape 2+ lettres (CNAM) : ex Metformine" />
+                {medSug.length > 0 && (
+                  <div className="mt-2 rounded-lg border bg-background p-2 max-h-48 overflow-auto">
+                    {medSug.map((m)=>(
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
+                        onClick={()=>pickMed(m)}
+                      >
+                        <div className="font-medium">{m.dci}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {m.atc ? "ATC: " + m.atc + " • " : ""}{m.form ?? ""} {m.strength ?? ""} {m.reimbursable === false ? "• non couvert" : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {dci && (
+                  <div className="mt-1 text-xs text-primary">
+                    Sélectionné: {dci}
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
                 <div className="text-sm font-medium">Dosage</div>
@@ -181,12 +225,3 @@ try {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

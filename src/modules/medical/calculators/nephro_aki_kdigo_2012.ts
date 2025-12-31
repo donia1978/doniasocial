@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Classification AKI selon KDIGO 2012
  * Acute Kidney Injury - Kidney Disease Improving Global Outcomes 2012
  */
@@ -34,22 +34,22 @@ export function akiKdigo2012(params: AKIParams): AKIResult {
     
     if (currentCreatinine >= 354 && increase >= 0.3) {
       criteria.push("Créatinine ≥ 354 μmol/L avec augmentation ≥ 0.3 mg/dL (≥ 26.5 μmol/L)");
-      stage = Math.max(stage, 1);
+      stage = (Math.max(stage, 1) as 0 | 1 | 2 | 3);
     }
     
     if (increase >= 2.0 && increase < 3.0) {
       criteria.push("Créatinine 2.0-2.9 × baseline");
-      stage = Math.max(stage, 2);
+      stage = (Math.max(stage, 2) as 0 | 1 | 2 | 3);
     }
     
     if (increase >= 3.0) {
       criteria.push("Créatinine ≥ 3.0 × baseline");
-      stage = Math.max(stage, 3);
+      stage = (Math.max(stage, 3) as 0 | 1 | 2 | 3);
     }
     
     if (currentCreatinine >= 354) {
       criteria.push("Créatinine ≥ 354 μmol/L");
-      stage = Math.max(stage, 3);
+      stage = (Math.max(stage, 3) as 0 | 1 | 2 | 3);
     }
   }
   
@@ -57,22 +57,22 @@ export function akiKdigo2012(params: AKIParams): AKIResult {
   if (urineOutput !== undefined) {
     if (urineOutput < 0.5 && timeWindow >= 6) {
       criteria.push("Diurèse < 0.5 mL/kg/h pendant ≥ 6h");
-      stage = Math.max(stage, 1);
+      stage = (Math.max(stage, 1) as 0 | 1 | 2 | 3);
     }
     
     if (urineOutput < 0.5 && timeWindow >= 12) {
       criteria.push("Diurèse < 0.5 mL/kg/h pendant ≥ 12h");
-      stage = Math.max(stage, 2);
+      stage = (Math.max(stage, 2) as 0 | 1 | 2 | 3);
     }
     
     if (urineOutput < 0.3 && timeWindow >= 24) {
       criteria.push("Diurèse < 0.3 mL/kg/h pendant ≥ 24h");
-      stage = Math.max(stage, 3);
+      stage = (Math.max(stage, 3) as 0 | 1 | 2 | 3);
     }
     
     if (urineOutput === 0 && timeWindow >= 12) {
       criteria.push("Anurie pendant ≥ 12h");
-      stage = Math.max(stage, 3);
+      stage = (Math.max(stage, 3) as 0 | 1 | 2 | 3);
     }
   }
   

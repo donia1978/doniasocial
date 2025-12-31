@@ -18,7 +18,7 @@ export async function searchCnamMedications(q: string, limit = 12): Promise<Cnam
     .select("id,dci,atc,form,strength,reimbursable")
     .eq("country_code", "TN")
     .eq("payer", "CNAM")
-    .ilike("dci", %%)
+    .ilike("dci", `%${query}%`)
     .limit(limit);
 
   if (error) throw error;
