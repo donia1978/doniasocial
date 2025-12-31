@@ -1,18 +1,28 @@
-﻿name: donia-ci
+﻿name: DONIA CI
+
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run build
-      - run: npm run test --if-present
+          node-version: 18
+
+      - name: Frontend build
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Backend install
+        run: |
+          cd backend
+          npm install
