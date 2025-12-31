@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { GlobalSearch, useGlobalSearch } from "@/components/GlobalSearch";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 
@@ -53,6 +54,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </Button>
 
         <div className="flex items-center gap-3 ml-4">
+          <ThemeToggle />
           <NotificationCenter />
         </div>
       </div>
