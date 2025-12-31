@@ -13,6 +13,9 @@ import {
   FileText,
   Cloud,
 } from "lucide-react";
+import { Suspense, lazy } from "react";
+
+const AnimatedLogo3D = lazy(() => import("@/components/AnimatedLogo3D"));
 
 const features = [
   {
@@ -76,9 +79,22 @@ export default function Index() {
         </div>
       </header>
 
-      {/* Main Hero */}
-      <section className="container mx-auto px-4 py-24 text-center">
-        <div className="mx-auto max-w-3xl space-y-6">
+      {/* Main Hero with 3D Logo */}
+      <section className="container mx-auto px-4 py-16 text-center">
+        <div className="mx-auto max-w-4xl space-y-6">
+          {/* 3D Animated Logo */}
+          <div className="relative mx-auto w-64 h-64 md:w-80 md:h-80 mb-8">
+            <Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-primary/20 animate-pulse" />
+              </div>
+            }>
+              <AnimatedLogo3D />
+            </Suspense>
+            {/* Glow effect */}
+            <div className="absolute inset-0 -z-10 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+          </div>
+
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary">
             <Shield className="h-4 w-4" />
             Plateforme sécurisée
@@ -114,9 +130,9 @@ export default function Index() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <Card key={feature.title} className="transition-all hover:shadow-lg hover:border-primary/50">
+            <Card key={feature.title} className="transition-all hover:shadow-lg hover:border-primary/50 group">
               <CardHeader>
-                <div className="mb-2 inline-flex rounded-lg bg-primary/10 p-3">
+                <div className="mb-2 inline-flex rounded-lg bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
                   <feature.icon className="h-6 w-6 text-primary" />
                 </div>
                 <CardTitle>{feature.title}</CardTitle>
