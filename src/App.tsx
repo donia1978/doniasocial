@@ -1,4 +1,4 @@
-﻿import MedicalRenewals from "./pages/dashboard/MedicalRenewals";
+import MedicalRenewals from "./pages/dashboard/MedicalRenewals";
 import MedicalPrescriptions from "./pages/dashboard/MedicalPrescriptions";
 import MedicalScheduling from "./pages/dashboard/MedicalScheduling";
 import TunisiaInfo from "./pages/info/tunisia";
@@ -44,19 +44,14 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/education" element={<Education />} />
                 <Route path="/dashboard/education/exam" element={<ExamGenerator />} />
                 <Route path="/dashboard/medical" element={<Medical />} />
                 <Route path="/dashboard/notifications" element={<Notifications />} />
                 <Route path="/dashboard/agenda" element={<Agenda />} />
-                <Route path="/dashboard/courses" element={<Courses />} />
                 <Route path="/dashboard/chat" element={<Chat />} />
                 <Route path="/dashboard/users" element={<UserManagement />} />
-                <Route path="/dashboard/analytics" element={<Analytics />} />
                 <Route path="/dashboard/social" element={<Social />} />
                 <Route path="/dashboard/sos" element={<SOS />} />
-                <Route path="/dashboard/research" element={<Research />} />
-                <Route path="/dashboard/statistics" element={<Statistics />} />
                 <Route path="/dashboard/information" element={<Information />} />
                 <Route path="/dashboard/profile" element={<Profile />} />
                 <Route path="/dashboard/settings" element={<Settings />} />
@@ -65,8 +60,6 @@ const App = () => (
                 <Route path="/medical" element={<Medical />} />
                 <Route path="/medical/scheduling" element={<MedicalScheduling />} />
                 <Route path="/medical/calculators" element={<Medical />} />
-                <Route path="/research" element={<Research />} />
-                <Route path="/statistics" element={<Statistics />} />
                 <Route path="/medical/prescriptions" element={<MedicalPrescriptions />} />
                 <Route path="/medical/renewals" element={<MedicalRenewals />} />
                 <Route path="/info/tunisia" element={<TunisiaInfoPage />} />
@@ -81,8 +74,3 @@ const App = () => (
 );
 
 export default App;
-
-
-
-
-
