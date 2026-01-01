@@ -1,4 +1,4 @@
-import MedicalRenewals from "./pages/dashboard/MedicalRenewals";
+﻿import MedicalRenewals from "./pages/dashboard/MedicalRenewals";
 import MedicalPrescriptions from "./pages/dashboard/MedicalPrescriptions";
 import MedicalScheduling from "./pages/dashboard/MedicalScheduling";
 import TunisiaInfo from "./pages/info/tunisia";
@@ -12,19 +12,14 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Education from "./pages/dashboard/Education";
 import ExamGenerator from "./pages/dashboard/ExamGenerator";
 import Medical from "./pages/dashboard/Medical";
 import Notifications from "./pages/dashboard/Notifications";
 import Agenda from "./pages/dashboard/Agenda";
-import Courses from "./pages/dashboard/Courses";
 import Chat from "./pages/dashboard/Chat";
 import UserManagement from "./pages/dashboard/UserManagement";
-import Analytics from "./pages/dashboard/Analytics";
 import Social from "./pages/dashboard/Social";
 import SOS from "./pages/dashboard/SOS";
-import Research from "./pages/dashboard/Research";
-import Statistics from "./pages/dashboard/Statistics";
 import Information from "./pages/dashboard/Information";
 import Documentation from "./pages/Documentation";
 import Profile from "./pages/dashboard/Profile";
@@ -86,3 +81,8 @@ const App = () => (
 );
 
 export default App;
+
+
+
+
+

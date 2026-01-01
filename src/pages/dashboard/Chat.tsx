@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { VideoCallModal } from "@/components/chat/VideoCallModal";
+import { VideoCallModal } from "@/components/social/chat/VideoCallModal";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -300,7 +300,7 @@ export default function Chat() {
       .single();
 
     if (convError || !newConv) {
-      toast.error("Erreur lors de la création de la conversation");
+      toast.error("Erreur lors de la crÃ©ation de la conversation");
       return;
     }
 
@@ -316,7 +316,7 @@ export default function Chat() {
       return;
     }
 
-    toast.success("Conversation créée !");
+    toast.success("Conversation crÃ©Ã©e !");
     setNewConversationDialog(false);
     setSelectedUserId("");
     fetchConversations();
@@ -325,7 +325,7 @@ export default function Chat() {
   const startCall = (isVideo: boolean) => {
     if (!selectedConversation) return;
     setCallModal({ open: true, isVideo });
-    toast.info(isVideo ? "Démarrage de l'appel vidéo..." : "Démarrage de l'appel audio...");
+    toast.info(isVideo ? "DÃ©marrage de l'appel vidÃ©o..." : "DÃ©marrage de l'appel audio...");
   };
 
   const getInitials = (name: string | null | undefined, email: string | null | undefined) => {
@@ -358,7 +358,7 @@ export default function Chat() {
                   <DialogHeader>
                     <DialogTitle>Nouvelle conversation</DialogTitle>
                     <DialogDescription>
-                      Sélectionnez un utilisateur pour démarrer une conversation
+                      SÃ©lectionnez un utilisateur pour dÃ©marrer une conversation
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
@@ -400,7 +400,7 @@ export default function Chat() {
                       Annuler
                     </Button>
                     <Button onClick={handleCreateConversation} disabled={!selectedUserId}>
-                      Créer
+                      CrÃ©er
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -545,7 +545,7 @@ export default function Chat() {
                     {messages.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
                         <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>Démarrez la conversation en envoyant un message</p>
+                        <p>DÃ©marrez la conversation en envoyant un message</p>
                       </div>
                     )}
                     {messages.map((msg) => {
@@ -600,7 +600,7 @@ export default function Chat() {
                     <Image className="h-5 w-5" />
                   </Button>
                   <Input
-                    placeholder="Écrivez un message..."
+                    placeholder="Ã‰crivez un message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     disabled={sendingMessage}
@@ -623,7 +623,7 @@ export default function Chat() {
             <CardContent className="flex-1 flex flex-col items-center justify-center">
               <MessageSquare className="h-16 w-16 text-muted-foreground/50" />
               <p className="mt-4 text-muted-foreground">
-                Sélectionnez une conversation pour commencer
+                SÃ©lectionnez une conversation pour commencer
               </p>
               <Button 
                 variant="outline" 
@@ -648,3 +648,4 @@ export default function Chat() {
     </DashboardLayout>
   );
 }
+

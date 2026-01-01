@@ -1,0 +1,8 @@
+﻿C:\doniasamer\doniasocial\src\App.tsx
+C:\doniasamer\doniasocial\src\components\GlobalSearch.tsx
+C:\doniasamer\doniasocial\src\components\layout\DashboardSidebar.tsx
+C:\doniasamer\doniasocial\src\pages\Dashboard.tsx
+C:\doniasamer\doniasocial\src\pages\dashboard\Chat.tsx
+C:\doniasamer\doniasocial\src\pages\dashboard\ExamGenerator.tsx
+C:\doniasamer\doniasocial\src\pages\Documentation.tsx
+C:\doniasamer\doniasocial\src\pages\teacher\index.tsx
