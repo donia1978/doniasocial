@@ -1,23 +1,10 @@
-﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const ALLOWED_ACTIONS = new Set([
-  "medical_calculator",
-  "medical_summary",
-  "draft_prescription" // draft only, must require human validation
-]);
-
-function assertAllowedAction(action: string) {
-  if (!ALLOWED_ACTIONS.has(action)) {
-    throw new Error("Action not allowed by DONIA policy: " + action);
-  }
-}
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-
 const ALLOWED_ACTIONS = new Set([
   "medical_calculator",
   "medical_summary",
-  "draft_prescription" // draft only, must require human validation
+  "draft_prescription"
 ]);
 
 function assertAllowedAction(action: string) {
@@ -25,19 +12,18 @@ function assertAllowedAction(action: string) {
     throw new Error("Action not allowed by DONIA policy: " + action);
   }
 }
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('[DeepSeek Medical] Missing authorization header');
@@ -53,7 +39,6 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error('[DeepSeek Medical] Invalid token:', authError?.message);
@@ -63,7 +48,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify user has medical_staff or admin role
     const { data: hasRole } = await supabase.rpc('has_role', {
       _user_id: user.id,
       _role: 'medical_staff'
@@ -96,111 +80,87 @@ serve(async (req) => {
 
     switch (action) {
       case 'generate_prescription':
-        systemPrompt = `Tu es un assistant mÃ©dical expert. Tu dois gÃ©nÃ©rer des suggestions de prescription basÃ©es sur les symptÃ´mes et le diagnostic fournis. 
-        IMPORTANT: Ceci est une SUGGESTION qui doit Ãªtre validÃ©e par un mÃ©decin humain. 
-        Tu dois toujours inclure des avertissements appropriÃ©s et ne jamais remplacer l'avis mÃ©dical professionnel.
-        RÃ©ponds en franÃ§ais.`;
-
-const ALLOWED_ACTIONS = new Set([
-  "medical_calculator",
-  "medical_summary",
-  "draft_prescription" // draft only, must require human validation
-]);
-
-function assertAllowedAction(action: string) {
-  if (!ALLOWED_ACTIONS.has(action)) {
-    throw new Error("Action not allowed by DONIA policy: " + action);
-  }
-}
+        systemPrompt = `Tu es un assistant médical expert. Tu dois générer des suggestions de prescription basées sur les symptômes et le diagnostic fournis. 
+        IMPORTANT: Ceci est une SUGGESTION qui doit être validée par un médecin humain. 
+        Tu dois toujours inclure des avertissements appropriés et ne jamais remplacer l'avis médical professionnel.
+        Réponds en français.`;
         userPrompt = `Patient: ${data.patientName}
-SymptÃ´mes: ${data.symptoms?.join(', ') || 'Non spÃ©cifiÃ©s'}
-Diagnostic: ${data.diagnosis || 'Non spÃ©cifiÃ©'}
+Symptômes: ${data.symptoms?.join(', ') || 'Non spécifiés'}
+Diagnostic: ${data.diagnosis || 'Non spécifié'}
 Pays: ${data.country || 'France'}
 Allergies connues: ${data.allergies?.join(', ') || 'Aucune connue'}
 
-GÃ©nÃ¨re une suggestion de prescription adaptÃ©e, en tenant compte de la disponibilitÃ© des mÃ©dicaments dans le pays du patient.`;
+Génère une suggestion de prescription adaptée, en tenant compte de la disponibilité des médicaments dans le pays du patient.`;
         break;
 
       case 'calculate_medical_indicator':
-        systemPrompt = `Tu es un calculateur mÃ©dical expert. Tu dois calculer les indicateurs mÃ©dicaux demandÃ©s avec prÃ©cision.
-        Fournis toujours les formules utilisÃ©es, les valeurs normales de rÃ©fÃ©rence, et l'interprÃ©tation du rÃ©sultat.
-        RÃ©ponds en franÃ§ais avec un format structurÃ©.`;
-        userPrompt = `Calcul demandÃ©: ${data.calculationType}
-DonnÃ©es patient: ${JSON.stringify(data.patientData)}
+        systemPrompt = `Tu es un calculateur médical expert. Tu dois calculer les indicateurs médicaux demandés avec précision.
+        Fournis toujours les formules utilisées, les valeurs normales de référence, et l'interprétation du résultat.
+        Réponds en français avec un format structuré.`;
+        userPrompt = `Calcul demandé: ${data.calculationType}
+Données patient: ${JSON.stringify(data.patientData)}
 
 Effectue le calcul et fournis:
-1. La formule utilisÃ©e
-2. Le rÃ©sultat avec unitÃ©s
-3. Les valeurs normales de rÃ©fÃ©rence
-4. L'interprÃ©tation du rÃ©sultat`;
+1. La formule utilisée
+2. Le résultat avec unités
+3. Les valeurs normales de référence
+4. L'interprétation du résultat`;
         break;
 
       case 'analyze_symptoms':
-        systemPrompt = `Tu es un assistant mÃ©dical pour l'analyse prÃ©liminaire des symptÃ´mes.
-        Tu dois fournir des pistes de diagnostic diffÃ©rentiel basÃ©es sur les symptÃ´mes dÃ©crits.
-        AVERTISSEMENT: Ceci n'est pas un diagnostic mÃ©dical. Le patient doit consulter un professionnel de santÃ©.
-        RÃ©ponds en franÃ§ais.`;
-        userPrompt = `SymptÃ´mes rapportÃ©s: ${data.symptoms?.join(', ')}
-DurÃ©e: ${data.duration || 'Non spÃ©cifiÃ©e'}
-AntÃ©cÃ©dents: ${data.medicalHistory || 'Non spÃ©cifiÃ©s'}
+        systemPrompt = `Tu es un assistant médical pour l'analyse préliminaire des symptômes.
+        Tu dois fournir des pistes de diagnostic différentiel basées sur les symptômes décrits.
+        AVERTISSEMENT: Ceci n'est pas un diagnostic médical. Le patient doit consulter un professionnel de santé.
+        Réponds en français.`;
+        userPrompt = `Symptômes rapportés: ${data.symptoms?.join(', ')}
+Durée: ${data.duration || 'Non spécifiée'}
+Antécédents: ${data.medicalHistory || 'Non spécifiés'}
 
-Fournis une analyse prÃ©liminaire avec des pistes de diagnostic diffÃ©rentiel.`;
+Fournis une analyse préliminaire avec des pistes de diagnostic différentiel.`;
         break;
 
       case 'interpret_calculation':
-        systemPrompt = `Tu es un expert mÃ©dical spÃ©cialisÃ© dans l'interprÃ©tation des scores et calculs mÃ©dicaux.
-        Tu dois analyser le rÃ©sultat du calcul et fournir:
-        1. Une interprÃ©tation clinique dÃ©taillÃ©e
+        systemPrompt = `Tu es un expert médical spécialisé dans l'interprétation des scores et calculs médicaux.
+        Tu dois analyser le résultat du calcul et fournir:
+        1. Une interprétation clinique détaillée
         2. Les implications pour le patient
-        3. Des recommandations thÃ©rapeutiques personnalisÃ©es
-        4. Les points de vigilance et surveillances Ã  effectuer
-        5. Les examens complÃ©mentaires Ã©ventuels Ã  envisager
+        3. Des recommandations thérapeutiques personnalisées
+        4. Les points de vigilance et surveillances à effectuer
+        5. Les examens complémentaires éventuels à envisager
         
         Adapte ton analyse au contexte du patient si fourni.
-        IMPORTANT: Ceci est une aide Ã  la dÃ©cision et doit Ãªtre validÃ© par le mÃ©decin.
-        RÃ©ponds en franÃ§ais de maniÃ¨re structurÃ©e et professionnelle.`;
-
-const ALLOWED_ACTIONS = new Set([
-  "medical_calculator",
-  "medical_summary",
-  "draft_prescription" // draft only, must require human validation
-]);
-
-function assertAllowedAction(action: string) {
-  if (!ALLOWED_ACTIONS.has(action)) {
-    throw new Error("Action not allowed by DONIA policy: " + action);
-  }
-}
-        userPrompt = `Calcul effectuÃ©: ${data.calculatorName}
+        IMPORTANT: Ceci est une aide à la décision et doit être validé par le médecin.
+        Réponds en français de manière structurée et professionnelle.`;
+        userPrompt = `Calcul effectué: ${data.calculatorName}
 Type de calculateur: ${data.calculatorCategory}
 Description: ${data.calculatorDescription}
 
-DonnÃ©es d'entrÃ©e: ${JSON.stringify(data.inputData, null, 2)}
+Données d'entrée: ${JSON.stringify(data.inputData, null, 2)}
 
-RÃ©sultat: ${data.result.value} ${data.result.unit}
-InterprÃ©tation de base: ${data.result.interpretation}
+Résultat: ${data.result.value} ${data.result.unit}
+Interprétation de base: ${data.result.interpretation}
 Valeurs normales: ${data.result.normalRange}
-SÃ©vÃ©ritÃ©: ${data.result.severity || 'normale'}
+Sévérité: ${data.result.severity || 'normale'}
 
 ${data.patientContext ? `Contexte patient: ${data.patientContext}` : ''}
 
 Fournis une analyse clinique approfondie avec:
-1. **Signification clinique** - Que signifie ce rÃ©sultat pour le patient?
-2. **Implications** - Quelles sont les consÃ©quences possibles?
-3. **Recommandations** - Quelles actions thÃ©rapeutiques envisager?
-4. **Surveillance** - Quels paramÃ¨tres surveiller?
-5. **Examens complÃ©mentaires** - Quels examens seraient utiles?`;
+1. **Signification clinique** - Que signifie ce résultat pour le patient?
+2. **Implications** - Quelles sont les conséquences possibles?
+3. **Recommandations** - Quelles actions thérapeutiques envisager?
+4. **Surveillance** - Quels paramètres surveiller?
+5. **Examens complémentaires** - Quels examens seraient utiles?`;
         break;
 
       case 'appointment_reminder':
-        systemPrompt = `Tu es un assistant de rappel de rendez-vous mÃ©dical. GÃ©nÃ¨re des messages de rappel professionnels et bienveillants en franÃ§ais.`;
-        userPrompt = `GÃ©nÃ©rer un rappel de rendez-vous:
+        systemPrompt = `Tu es un assistant de rappel de rendez-vous médical. Génère des messages de rappel professionnels et bienveillants en français.`;
+        userPrompt = `Générer un rappel de rendez-vous:
 Patient: ${data.patientName}
-MÃ©decin: ${data.doctorName}
+Médecin: ${data.doctorName}
 Date: ${data.appointmentDate}
 Heure: ${data.appointmentTime}
 Type: ${data.appointmentType}
-Lieu: ${data.location || 'Cabinet mÃ©dical'}
+Lieu: ${data.location || 'Cabinet médical'}
 
 Type de rappel: ${data.reminderType} (24h avant / 2h avant / 15 min avant)`;
         break;
@@ -243,7 +203,7 @@ Type de rappel: ${data.reminderType} (24h avant / 2h avant / 15 min avant)`;
       success: true, 
       content,
       action,
-      disclaimer: "Cette information est gÃ©nÃ©rÃ©e par IA et doit Ãªtre validÃ©e par un professionnel de santÃ© qualifiÃ©."
+      disclaimer: "Cette information est générée par IA et doit être validée par un professionnel de santé qualifié."
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -259,4 +219,3 @@ Type de rappel: ${data.reminderType} (24h avant / 2h avant / 15 min avant)`;
     });
   }
 });
-
